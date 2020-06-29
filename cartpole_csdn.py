@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Categorical
-from zhihulogger import Logger
+#from zhihulogger import Logger
 
 class Policy(nn.Module):
     def __init__(self):
@@ -40,7 +40,7 @@ def select_action(state):
     return action.item()
 
 
-def finish_episode(i_episode, logger):
+def finish_episode(i_episode):
     R = 0
     policy_loss = []
     returns = []
@@ -83,7 +83,7 @@ def finish_episode(i_episode, logger):
 
 def main():
     running_reward = 10
-    logger = Logger('./logpend')
+    #logger = Logger('./logpend')
     for i_episode in count(1):
         state, ep_reward = env.reset(), 0
         for t in range(1, 10000):  # Don't infinite loop while learning
@@ -98,7 +98,7 @@ def main():
                 break
 
         running_reward = 0.05 * ep_reward + (1 - 0.05) * running_reward
-        finish_episode(i_episode, logger)
+        finish_episode(i_episode)
         if i_episode % args.log_interval == 0:
             print('Episode {}\tLast reward: {:.2f}\tAverage reward: {:.2f}'.format(
                 i_episode, ep_reward, running_reward))

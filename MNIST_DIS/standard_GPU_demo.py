@@ -24,6 +24,7 @@ test_dataset = datasets.MNIST(
     root='./data', train=False, transform=transforms.ToTensor())
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 
@@ -58,12 +59,14 @@ optimizer = optim.SGD(model.parameters(), lr=learning_rate)
 
 # 开始训练
 for epoch in range(num_epoches):
+    model = model.cuda()
     print('epoch {}'.format(epoch + 1))
     print('*' * 10)
     running_loss = 0.0
     running_acc = 0.0
     for i, data in enumerate(train_loader, 1):
         img, label = data
+
         if use_gpu:
             img = img.cuda()
             label = label.cuda()
@@ -87,19 +90,20 @@ for epoch in range(num_epoches):
     print('Finish {} epoch, Loss: {:.6f}, Acc: {:.6f}'.format(
         epoch + 1, running_loss / (len(train_dataset)), running_acc / (len(
             train_dataset))))
+    model = model.cpu()
     model.eval()
     eval_loss = 0
     eval_acc = 0
     for data in test_loader:
         img, label = data
-        if use_gpu:
-            with torch.no_grad():
-                img = img.cuda()
-                label = label.cuda()
-        else:
-            with torch.no_grad():
-                img = img
-                label = label
+        # if use_gpu:
+        with torch.no_grad():
+            img = img#.cuda()
+            label = label#.cuda()
+        # else:
+        #     with torch.no_grad():
+        #         img = img
+        #         label = label
         out = model(img)
         loss = criterion(out, label)
         eval_loss += loss.item() * label.size(0)

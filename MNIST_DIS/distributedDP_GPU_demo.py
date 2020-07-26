@@ -51,6 +51,8 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 
 
+
+
 # 定义 Convolution Network 模型
 class Cnn(nn.Module):
     def __init__(self, in_dim, n_class):
@@ -66,10 +68,11 @@ class Cnn(nn.Module):
             nn.Linear(400, 120), nn.Linear(120, 84), nn.Linear(84, n_class))
 
     def forward(self, x):
+        # print(x.squeeze(0).size())
         out = self.conv(x)
         out = out.view(out.size(0), -1)
         out = self.fc(out)
-#        print(x)
+        # print(out.squeeze(0).size())
         return out
 
 
@@ -98,6 +101,7 @@ for epoch in range(num_epoches):
             img = img.cuda(non_blocking=True)
             label = label.cuda(non_blocking=True)
         # 向前传播
+        # print(img.squeeze(0).size())
         out = model(img)
         datasize += len(img)
         loss = criterion(out, label)

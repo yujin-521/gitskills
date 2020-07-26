@@ -58,9 +58,11 @@ class Cnn(nn.Module):
             nn.Linear(400, 120), nn.Linear(120, 84), nn.Linear(84, n_class))
 
     def forward(self, x):
+        print(x.squeeze(0).size())
         out = self.conv(x)
         out = out.view(out.size(0), -1)
         out = self.fc(out)
+        # print(out.squeeze(0).size())
       #  print("\tIn Model: input size", x.size(), "output size", out.size())
         return out
 
@@ -94,6 +96,7 @@ for epoch in range(num_epoches):
     for i, data in enumerate(train_loader, 1):
         img, label = data
         img = img.cuda(non_blocking=True)
+        # print(img.squeeze(0).size())
         label = label.cuda(non_blocking=True)
         # 向前传播
         out = model(img)
@@ -134,5 +137,5 @@ for epoch in range(num_epoches):
         test_dataset)), eval_acc / (len(test_dataset))))
     print('Finish training a epoch',time.ctime())
     print('================')
-finish_time = datetime.now() #获得当前时间
+finish_time = datetime.now()  #获得当前时间
 print('total time of training', (finish_time-start_time).seconds)

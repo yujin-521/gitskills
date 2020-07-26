@@ -179,7 +179,7 @@ if __name__ == '__main__':
         'epsi_high': 0.9,
         'epsi_low': 0.05,
         'decay': 200,  # exploration的衰减率
-        'lr': 0.001,
+        'lr': 0.002,
         'capacity': 10000,
         'batch_size': 128,
         'state_space_dim': env.observation_space.shape[0],
@@ -219,6 +219,8 @@ if __name__ == '__main__':
             #########################################################
             # =========================== Redis =========================== #
             if (len(agent.buffer)) < agent.batch_size:
+                pass
+            else:
                 r = redis.Redis(host='localhost', port=6379, decode_responses=False)
                 modeldata = r.get('eval_net_para')
                 io_buffer = io.BytesIO()

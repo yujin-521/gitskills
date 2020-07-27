@@ -118,16 +118,16 @@ if __name__ == '__main__':
         'epsi_high': 0.9,
         'epsi_low': 0.05,
         'decay': 200,  # exploration的衰减率
-        'lr': 0.001,
+        'lr': 0.002,
         'capacity': 10000,
-        'batch_size': 128,
+        'batch_size': 256,
         'state_space_dim': env.observation_space.shape[0],
         'action_space_dim': env.action_space.n
     }
     agent = Agent(**params)
     score = []
     mean = []
-    maxepisode = 201
+    maxepisode = 101
     count_whole_score = 0
     start_time = datetime.now()  # 获得当前时间
     print('STARTTIME', start_time)

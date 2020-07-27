@@ -181,18 +181,18 @@ if __name__ == '__main__':
         'decay': 200,  # exploration的衰减率
         'lr': 0.002,
         'capacity': 10000,
-        'batch_size': 128,
+        'batch_size': 256,
         'state_space_dim': env.observation_space.shape[0],
         'action_space_dim': env.action_space.n
     }
     agent = Agent(**params)
     score = []
     mean = []
-    maxepisode = 35
+    maxepisode = 100
     count_whole_score = 0
     start_time = datetime.now()  # 获得当前时间
     print('STARTTIME', start_time)
-
+    r = redis.Redis(host='localhost', port=6379, decode_responses=False)
     for episode in range(maxepisode):
         s0 = env.reset()
         total_reward = 1
@@ -221,7 +221,6 @@ if __name__ == '__main__':
             if (len(agent.buffer)) < agent.batch_size:
                 pass
             else:
-                r = redis.Redis(host='localhost', port=6379, decode_responses=False)
                 modeldata = r.get('eval_net_para')
                 io_buffer = io.BytesIO()
                 io_buffer.write(modeldata)

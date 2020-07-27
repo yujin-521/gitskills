@@ -16,6 +16,7 @@ import redis
 import pickle, io
 import warnings
 
+torch.set_num_threads(1)  # todo
 warnings.filterwarnings("ignore")
 
 def setup_seed(seed):
@@ -77,6 +78,7 @@ class Agent(object):
 
     def act(self, s0):
         self.steps += 1
+        print(self.steps)
         epsi = self.epsi_low + (self.epsi_high - self.epsi_low) * (math.exp(-1.0 * self.steps / self.decay))
         if random.random() < epsi:
             a0 = random.randrange(self.action_space_dim)
@@ -92,8 +94,8 @@ class Agent(object):
         self.buffer.append(transition)
 
     def learn(self, gpu, args):
-        if self.steps % 49 == 0:
-            print('gpu-now', gpu)
+        # if self.steps % 49 == 0:
+        #     print('gpu-now', gpu)
         rank = args.nr * args.gpus + gpu
         os.environ['MASTER_ADDR'] = '192.168.0.116'  # '10.57.23.164'  # 告诉Multiprocessing模块去哪个IP地址找process 0以确保初始同步所有进程
         os.environ['MASTER_PORT'] = '37439'  # '8888'  # process 0所在的端口
@@ -102,15 +104,15 @@ class Agent(object):
         torch.cuda.set_device(gpu)
 
         if (len(self.buffer)) < self.batch_size:
-            if gpu == 0:
-                # =========================== Redis =========================== #
-                r = redis.Redis(host='localhost', port=6379, decode_responses=False)
-                io_buffer = io.BytesIO()
-                pickle.dump(self.eval_net.state_dict(), io_buffer)
-                model_byte_data = io_buffer.getvalue()
-                r.set('eval_net_para', model_byte_data)
-                # print('*******************  ------------------  ==============', model_byte_data)
-                # ====================================================== #
+            # if gpu == 0:
+            #     # =========================== Redis =========================== #
+            #     r = redis.Redis(host='localhost', port=6379, decode_responses=False)
+            #     io_buffer = io.BytesIO()
+            #     pickle.dump(self.eval_net.state_dict(), io_buffer)
+            #     model_byte_data = io_buffer.getvalue()
+            #     r.set('eval_net_para', model_byte_data)
+            #     # print('*******************  ------------------  ==============', model_byte_data)
+            #     # ====================================================== #
             return
         self.eval_net = self.eval_net.cuda(gpu)
         self.eval_net = nn.parallel.DistributedDataParallel(self.eval_net, device_ids=[gpu])
@@ -143,7 +145,7 @@ class Agent(object):
             self.optimizer.step()
 
         if gpu == 0:
-            print('gpu=', gpu)
+            # print('gpu=', gpu)
             # =========================== Redis =========================== #
             r = redis.Redis(host='localhost', port=6379, decode_responses=False)
             io_buffer = io.BytesIO()
@@ -177,20 +179,20 @@ if __name__ == '__main__':
         'epsi_high': 0.9,
         'epsi_low': 0.05,
         'decay': 200,  # exploration的衰减率
-        'lr': 0.001,
+        'lr': 0.002,
         'capacity': 10000,
-        'batch_size': 128,
+        'batch_size': 256,
         'state_space_dim': env.observation_space.shape[0],
         'action_space_dim': env.action_space.n
     }
     agent = Agent(**params)
     score = []
     mean = []
-    maxepisode = 101
+    maxepisode = 100
     count_whole_score = 0
     start_time = datetime.now()  # 获得当前时间
     print('STARTTIME', start_time)
-
+    r = redis.Redis(host='localhost', port=6379, decode_responses=False)
     for episode in range(maxepisode):
         s0 = env.reset()
         total_reward = 1
@@ -216,17 +218,20 @@ if __name__ == '__main__':
             p2.join()
             #########################################################
             # =========================== Redis =========================== #
-            r = redis.Redis(host='localhost', port=6379, decode_responses=False)
-            modeldata = r.get('eval_net_para')
-            io_buffer = io.BytesIO()
-            io_buffer.write(modeldata)
-            io_buffer.seek(0)
-            modelpara = pickle.load(io_buffer)
-            # print('*******************  ------------------  ==============', modelpara)
-            agent.act_net.load_state_dict(strip_ddp_state_dict(modelpara))
+            if (len(agent.buffer)) < agent.batch_size:
+                pass
+            else:
+                modeldata = r.get('eval_net_para')
+                io_buffer = io.BytesIO()
+                io_buffer.write(modeldata)
+                io_buffer.seek(0)
+                modelpara = pickle.load(io_buffer)
+                # print('*******************  ------------------  ==============', modelpara)
+                agent.act_net.load_state_dict(strip_ddp_state_dict(modelpara))
 
         if episode % 1 == 0:
             print(episode, ': ', total_reward)
 
     finish_time = datetime.now()  # 获得当前时间
     print('total time of training', (finish_time-start_time).seconds)
+
